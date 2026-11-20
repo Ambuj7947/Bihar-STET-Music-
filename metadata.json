@@ -1,0 +1,6 @@
+{
+  "name": "STET Music",
+  "description": "Bihar STET Paper 1 Music final CBT mock test practice app with 460 verified questions, real 150-question 150-minute exam simulator, analytics, mistake notebook, and high-yield revision notes.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
