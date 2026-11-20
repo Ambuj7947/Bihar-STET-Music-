@@ -300,6 +300,12 @@ internal fun CbtInstructionsDialog(onDismiss: () -> Unit) {
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Medium
                 )
+                Text(
+                    "• Strict Auto-Submit Rule: Exiting the app, pressing Home, opening another app, or enabling split-screen during a live test will automatically submit your test immediately.",
+                    color = CrimsonRed,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         },
         confirmButton = {
@@ -367,31 +373,40 @@ internal fun CbtSubmitConfirmDialog(
 @Composable
 internal fun CbtExitConfirmDialog(
     onDismiss: () -> Unit,
-    onSubmitAndViewScore: () -> Unit,
-    onExitWithoutSaving: () -> Unit
+    onSubmitAndExit: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = CardSurface,
-        title = { Text("Leave Active Test?", fontWeight = FontWeight.Bold, color = NavyPrimary) },
-        text = { Text("You can either submit your current answers to generate a scorecard or exit without saving.") },
+        title = {
+            Text(
+                text = stringResource(R.string.cbt_exit_title),
+                fontWeight = FontWeight.Bold,
+                color = CrimsonRed
+            )
+        },
+        text = {
+            Text(
+                text = stringResource(R.string.cbt_exit_message),
+                color = TextPrimary,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        },
         confirmButton = {
             Button(
                 onClick = {
                     onDismiss()
-                    onSubmitAndViewScore()
+                    onSubmitAndExit()
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = NavyPrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = CrimsonRed),
+                modifier = Modifier.testTag("cbt_exit_submit_button")
             ) {
-                Text("Submit & View Score")
+                Text(stringResource(R.string.btn_submit_and_exit))
             }
         },
         dismissButton = {
-            TextButton(onClick = {
-                onDismiss()
-                onExitWithoutSaving()
-            }) {
-                Text("Exit", color = CrimsonRed)
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.btn_continue_test), color = NavyPrimary)
             }
         }
     )

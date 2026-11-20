@@ -27,6 +27,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Flag
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.ZoomIn
@@ -68,7 +69,9 @@ import com.example.ui.components.formatDurationMs
 import com.example.ui.theme.AmberAccent
 import com.example.ui.theme.AppBackground
 import com.example.ui.theme.CardSurface
+import com.example.ui.theme.CrimsonDarkText
 import com.example.ui.theme.CrimsonRed
+import com.example.ui.theme.CrimsonSoft
 import com.example.ui.theme.EmeraldGreen
 import com.example.ui.theme.EmeraldSoft
 import com.example.ui.theme.FlagPurple
@@ -102,7 +105,7 @@ fun CbtTestScreen(
     onZoomOut: () -> Unit,
     onResetZoom: () -> Unit,
     onSubmitTest: () -> Unit,
-    onExitWithoutSaving: () -> Unit
+    onExitAndSubmit: () -> Unit
 ) {
     var showPaletteSheet by remember { mutableStateOf(false) }
     var showInstructions by remember { mutableStateOf(false) }
@@ -282,6 +285,37 @@ fun CbtTestScreen(
                         fontWeight = FontWeight.SemiBold
                     )
                 }
+            }
+        }
+        HorizontalDivider(color = SlateBorder)
+
+        // 2b. Strict Exam Mode Notice Strip
+        Surface(
+            color = CrimsonSoft,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("cbt_strict_mode_strip")
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Shield,
+                    contentDescription = null,
+                    tint = CrimsonRed,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = stringResource(R.string.cbt_strict_mode_banner),
+                    color = CrimsonDarkText,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2
+                )
             }
         }
         HorizontalDivider(color = SlateBorder)
@@ -724,8 +758,7 @@ fun CbtTestScreen(
     if (showExitConfirm) {
         CbtExitConfirmDialog(
             onDismiss = { showExitConfirm = false },
-            onSubmitAndViewScore = onSubmitTest,
-            onExitWithoutSaving = onExitWithoutSaving
+            onSubmitAndExit = onExitAndSubmit
         )
     }
 }

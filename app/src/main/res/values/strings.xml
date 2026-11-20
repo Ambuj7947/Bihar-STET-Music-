@@ -36,4 +36,16 @@
     <string name="mistakes_subtitle">Targeted Revision Notebook</string>
     <string name="notes_title">High-Yield Notes</string>
     <string name="notes_subtitle">Last-Day Rapid Revision Capsules</string>
+    <string name="cbt_strict_mode_banner">Strict CBT Mode: Going Home, exiting, or switching apps auto-submits your test.</string>
+    <string name="cbt_exit_title">Exit &amp; Submit Test?</string>
+    <string name="cbt_exit_message">Strict Exam Mode is active. Leaving the test, going to the Home screen, or switching to another app automatically submits your test with all saved answers.</string>
+    <string name="btn_submit_and_exit">Submit &amp; Exit</string>
+    <string name="btn_continue_test">Continue Test</string>
+    <string name="auto_submit_app_leave_title">Test Auto-Submitted (App Left / Switched)</string>
+    <string name="auto_submit_app_leave_desc">You tried to exit the app, go to the Home screen, or open another app during the active exam. Your test was automatically submitted with your attempted answers.</string>
+    <string name="auto_submit_multi_window_title">Test Auto-Submitted (Split-Screen Detected)</string>
+    <string name="auto_submit_multi_window_desc">Multi-window / split-screen mode was opened during the active exam. Your test was automatically submitted as per strict CBT rules.</string>
+    <string name="auto_submit_time_up_title">Time Up • Test Auto-Submitted</string>
+    <string name="auto_submit_time_up_desc">Your allotted exam duration ended and your saved answers were automatically submitted.</string>
+    <string name="badge_auto_submitted">Auto-Submitted</string>
 </resources>

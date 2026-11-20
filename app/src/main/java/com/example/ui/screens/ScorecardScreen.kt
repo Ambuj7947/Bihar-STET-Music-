@@ -29,6 +29,8 @@ import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.WarningAmber
 import androidx.compose.material.icons.outlined.BookmarkBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -61,6 +63,7 @@ import androidx.compose.ui.unit.sp
 import com.example.R
 import com.example.data.Question
 import com.example.data.local.QuestionProgressEntity
+import com.example.data.local.SubmissionReason
 import com.example.data.local.TestAttemptEntity
 import com.example.ui.components.formatDurationReadable
 import com.example.ui.theme.AmberAccent
@@ -78,6 +81,8 @@ import com.example.ui.theme.NavySurfaceTint
 import com.example.ui.theme.NotoDevanagari
 import com.example.ui.theme.SlateBorder
 import com.example.ui.theme.SoftInputBg
+import com.example.ui.theme.SprintAmberDark
+import com.example.ui.theme.SprintAmberSoft
 import com.example.ui.theme.TextMuted
 import com.example.ui.theme.TextPrimary
 import com.example.ui.theme.TextSecondary
@@ -154,12 +159,23 @@ fun ScorecardScreen(
             }
         }
 
+        val submissionReason = remember(attempt.submissionReason) {
+            SubmissionReason.fromValue(attempt.submissionReason)
+        }
+        val answerKeyHeaderIndex = if (submissionReason != SubmissionReason.MANUAL) 2 else 1
+
         LazyColumn(
             state = listState,
             modifier = Modifier.weight(1f),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            if (submissionReason != SubmissionReason.MANUAL) {
+                item {
+                    AutoSubmittedNoticeBanner(reason = submissionReason)
+                }
+            }
+
             item {
                 ScorecardSummaryCard(
                     attempt = attempt,
@@ -168,7 +184,7 @@ fun ScorecardScreen(
                     performanceLabel = performanceLabel,
                     ringColor = ringColor,
                     onJumpToExplanations = {
-                        coroutineScope.launch { listState.animateScrollToItem(1) }
+                        coroutineScope.launch { listState.animateScrollToItem(answerKeyHeaderIndex) }
                     }
                 )
             }
@@ -261,6 +277,67 @@ fun ScorecardScreen(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("Re-attempt Test", fontWeight = FontWeight.Bold)
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AutoSubmittedNoticeBanner(reason: SubmissionReason) {
+    val isViolation = reason == SubmissionReason.APP_SWITCH_OR_EXIT ||
+        reason == SubmissionReason.MULTI_WINDOW_VIOLATION
+    val bgColor = if (isViolation) CrimsonSoft else SprintAmberSoft
+    val borderColor = if (isViolation) CrimsonRed else SprintAmberDark
+    val titleColor = if (isViolation) CrimsonDarkText else SprintAmberDark
+    val icon = if (isViolation) Icons.Filled.WarningAmber else Icons.Filled.Timer
+
+    val (titleRes, descRes) = when (reason) {
+        SubmissionReason.APP_SWITCH_OR_EXIT ->
+            R.string.auto_submit_app_leave_title to R.string.auto_submit_app_leave_desc
+        SubmissionReason.MULTI_WINDOW_VIOLATION ->
+            R.string.auto_submit_multi_window_title to R.string.auto_submit_multi_window_desc
+        SubmissionReason.TIME_UP ->
+            R.string.auto_submit_time_up_title to R.string.auto_submit_time_up_desc
+        SubmissionReason.MANUAL -> return
+    }
+
+    Surface(
+        color = bgColor,
+        shape = RoundedCornerShape(16.dp),
+        border = BorderStroke(1.2.dp, borderColor.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .testTag("scorecard_auto_submit_banner")
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = borderColor,
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .size(22.dp)
+            )
+            Spacer(modifier = Modifier.width(10.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(titleRes),
+                    color = titleColor,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold
+                )
+                Spacer(modifier = Modifier.height(3.dp))
+                Text(
+                    text = stringResource(descRes),
+                    color = TextPrimary,
+                    style = MaterialTheme.typography.bodySmall,
+                    lineHeight = 18.sp
+                )
             }
         }
     }

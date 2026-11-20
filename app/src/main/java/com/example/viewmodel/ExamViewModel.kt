@@ -9,8 +9,12 @@ import com.example.data.MockTestMeta
 import com.example.data.Question
 import com.example.data.SectionInfo
 import com.example.data.local.QuestionProgressEntity
+import com.example.data.local.SubmissionReason
 import com.example.data.local.TestAttemptEntity
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -100,7 +104,9 @@ class ExamViewModel(application: Application) : AndroidViewModel(application) {
         .map { list -> list.associateBy { it.questionId } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyMap())
 
+    private val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private var timerJob: Job? = null
+    @Volatile
     private var isSubmitting: Boolean = false
 
     init {
@@ -304,18 +310,27 @@ class ExamViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun submitActiveTest() {
+    fun onAppBackgroundedDuringTest(
+        reason: SubmissionReason = SubmissionReason.APP_SWITCH_OR_EXIT
+    ) {
+        if (_screen.value is AppScreen.CbtTest && _activeCbt.value != null) {
+            submitActiveTest(reason)
+        }
+    }
+
+    fun submitActiveTest(reason: SubmissionReason = SubmissionReason.MANUAL) {
         if (isSubmitting) return
         val state = _activeCbt.value ?: return
         isSubmitting = true
         stopTimer()
-        viewModelScope.launch {
+        persistenceScope.launch {
             try {
                 val attemptId = repository.saveAttemptAndProgress(
                     testMeta = state.testMeta,
                     questions = state.questions,
                     selectedAnswers = state.selectedAnswers,
-                    durationSeconds = state.elapsedSeconds
+                    durationSeconds = state.elapsedSeconds,
+                    submissionReason = reason
                 )
                 val savedAttempt = repository.getAttemptById(attemptId)
                 _activeCbt.value = null
@@ -328,13 +343,6 @@ class ExamViewModel(application: Application) : AndroidViewModel(application) {
                 isSubmitting = false
             }
         }
-    }
-
-    fun abortActiveTest() {
-        stopTimer()
-        isSubmitting = false
-        _activeCbt.value = null
-        _screen.value = AppScreen.MainTabs(MainTab.HOME)
     }
 
     fun parseAnswersMap(answersJson: String): Map<String, Int> {
@@ -364,7 +372,7 @@ class ExamViewModel(application: Application) : AndroidViewModel(application) {
                     currentQuestionSeconds = current.currentQuestionSeconds + 1
                 )
                 if (nextRemaining == 0) {
-                    submitActiveTest()
+                    submitActiveTest(SubmissionReason.TIME_UP)
                     break
                 }
             }

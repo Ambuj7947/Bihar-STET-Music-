@@ -45,14 +45,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.Question
 import com.example.data.SectionInfo
 import com.example.data.local.QuestionProgressEntity
+import com.example.data.local.SubmissionReason
 import com.example.data.local.TestAttemptEntity
 import com.example.ui.components.formatDurationReadable
 import com.example.ui.theme.CardSurface
@@ -577,11 +580,33 @@ private fun AttemptHistoryCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    text = dateLabel,
-                    color = TextMuted,
-                    style = MaterialTheme.typography.labelSmall
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = dateLabel,
+                        color = TextMuted,
+                        style = MaterialTheme.typography.labelSmall
+                    )
+                    val reason = SubmissionReason.fromValue(attempt.submissionReason)
+                    if (reason == SubmissionReason.APP_SWITCH_OR_EXIT ||
+                        reason == SubmissionReason.MULTI_WINDOW_VIOLATION
+                    ) {
+                        Surface(
+                            color = CrimsonSoft,
+                            shape = RoundedCornerShape(6.dp)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.badge_auto_submitted),
+                                color = CrimsonRed,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                    }
+                }
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,

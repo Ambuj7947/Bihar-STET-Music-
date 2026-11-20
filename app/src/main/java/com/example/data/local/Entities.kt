@@ -3,6 +3,19 @@ package com.example.data.local
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 
+enum class SubmissionReason {
+    MANUAL,
+    TIME_UP,
+    APP_SWITCH_OR_EXIT,
+    MULTI_WINDOW_VIOLATION;
+
+    companion object {
+        fun fromValue(value: String?): SubmissionReason {
+            return entries.firstOrNull { it.name == value } ?: MANUAL
+        }
+    }
+}
+
 @Entity(tableName = "test_attempts")
 data class TestAttemptEntity(
     @PrimaryKey(autoGenerate = true) val attemptId: Long = 0L,
@@ -22,7 +35,8 @@ data class TestAttemptEntity(
     val unit2Wrong: Int,
     val unit2Total: Int,
     val questionIdsCsv: String,
-    val answersJson: String
+    val answersJson: String,
+    val submissionReason: String = SubmissionReason.MANUAL.name
 )
 
 @Entity(tableName = "question_progress")

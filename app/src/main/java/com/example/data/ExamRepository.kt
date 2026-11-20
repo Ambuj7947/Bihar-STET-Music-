@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.withTransaction
 import com.example.data.local.AppDatabase
 import com.example.data.local.QuestionProgressEntity
+import com.example.data.local.SubmissionReason
 import com.example.data.local.TestAttemptEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -31,7 +32,8 @@ class ExamRepository(context: Context) {
         testMeta: MockTestMeta,
         questions: List<Question>,
         selectedAnswers: Map<Int, Int>,
-        durationSeconds: Int
+        durationSeconds: Int,
+        submissionReason: SubmissionReason = SubmissionReason.MANUAL
     ): Long = withContext(Dispatchers.IO) {
         var correct = 0
         var incorrect = 0
@@ -111,7 +113,8 @@ class ExamRepository(context: Context) {
                 unit2Wrong = u2Wrong,
                 unit2Total = u2Total,
                 questionIdsCsv = questions.joinToString(",") { it.id },
-                answersJson = answersJsonObj.toString()
+                answersJson = answersJsonObj.toString(),
+                submissionReason = submissionReason.name
             )
             dao.insertAttempt(attempt)
         }

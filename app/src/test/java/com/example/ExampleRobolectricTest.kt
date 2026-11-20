@@ -1,19 +1,28 @@
 package com.example
 
+import android.app.Application
 import android.content.Context
+import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.example.data.ExamRepository
 import com.example.data.ExamUnit
 import com.example.data.QuestionBankLoader
+import com.example.data.local.SubmissionReason
+import com.example.viewmodel.AppScreen
+import com.example.viewmodel.ExamViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
@@ -130,5 +139,60 @@ class ExampleRobolectricTest {
         val updated = repo.allProgress.first().associateBy { it.questionId }
         assertTrue(updated.getValue(sectionQs[0].id).isBookmarked)
         assertFalse(updated.getValue(sectionQs[1].id).isMistake)
+    }
+
+    @Test
+    fun `leaving app during active test auto-submits exactly once with APP_SWITCH_OR_EXIT reason`() = runBlocking {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        val repo = ExamRepository(app)
+        val initialAttemptCount = repo.allAttempts.first().size
+        val vm = ExamViewModel(app)
+
+        // Wait for async question bank load while pumping Robolectric main looper
+        var waitCycles = 0
+        while (vm.bankState.value.isLoading && waitCycles < 100) {
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+            delay(50)
+            waitCycles++
+        }
+        assertFalse(vm.bankState.value.isLoading)
+        assertTrue(vm.bankState.value.sectionalTests.isNotEmpty())
+
+        // Leaving app while on Home screen should be a no-op
+        vm.onAppBackgroundedDuringTest(SubmissionReason.APP_SWITCH_OR_EXIT)
+        assertTrue(vm.screen.value is AppScreen.MainTabs)
+
+        // Start a test and answer Q1 correctly
+        val firstTest = vm.bankState.value.sectionalTests.first()
+        vm.startTest(firstTest)
+        assertTrue(vm.screen.value is AppScreen.CbtTest)
+        val activeState = vm.activeCbt.value
+        assertNotNull(activeState)
+        vm.selectOption(activeState!!.currentQuestion.answerIndex)
+
+        // Simulate onUserLeaveHint() immediately followed by onStop()
+        vm.onAppBackgroundedDuringTest(SubmissionReason.APP_SWITCH_OR_EXIT)
+        vm.onAppBackgroundedDuringTest(SubmissionReason.APP_SWITCH_OR_EXIT)
+
+        // Wait for persistenceScope IO transaction to finish
+        waitCycles = 0
+        while (vm.screen.value !is AppScreen.Scorecard && waitCycles < 100) {
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+            delay(50)
+            waitCycles++
+        }
+
+        val screen = vm.screen.value
+        assertTrue("Expected Scorecard after auto-submit, got $screen", screen is AppScreen.Scorecard)
+        assertNull(vm.activeCbt.value)
+
+        val attempt = (screen as AppScreen.Scorecard).attempt
+        assertEquals(SubmissionReason.APP_SWITCH_OR_EXIT.name, attempt.submissionReason)
+        assertEquals(1, attempt.correctCount)
+        assertEquals(0, attempt.incorrectCount)
+
+        // Confirm duplicate triggers only created ONE attempt
+        val finalAttemptCount = repo.allAttempts.first().size
+        assertEquals(initialAttemptCount + 1, finalAttemptCount)
     }
 }

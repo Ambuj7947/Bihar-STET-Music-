@@ -36,6 +36,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.data.ExamUnit
+import com.example.data.local.SubmissionReason
 import com.example.ui.components.ExamBottomNavBar
 import com.example.ui.components.ExamTopHeaderBar
 import com.example.ui.screens.AnalyticsScreen
@@ -65,10 +66,27 @@ class MainActivity : ComponentActivity() {
             statusBarStyle = SystemBarStyle.dark(AndroidColor.TRANSPARENT),
             navigationBarStyle = SystemBarStyle.light(AndroidColor.TRANSPARENT, AndroidColor.TRANSPARENT)
         )
+        addOnMultiWindowModeChangedListener { info ->
+            if (info.isInMultiWindowMode) {
+                examViewModel.onAppBackgroundedDuringTest(SubmissionReason.MULTI_WINDOW_VIOLATION)
+            }
+        }
         setContent {
             StetMusicTheme {
                 StetMusicAppRoot(viewModel = examViewModel)
             }
+        }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        examViewModel.onAppBackgroundedDuringTest(SubmissionReason.APP_SWITCH_OR_EXIT)
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (!isChangingConfigurations) {
+            examViewModel.onAppBackgroundedDuringTest(SubmissionReason.APP_SWITCH_OR_EXIT)
         }
     }
 }
@@ -168,8 +186,8 @@ private fun StetMusicAppRoot(viewModel: ExamViewModel) {
                     onZoomIn = { viewModel.adjustFontScale(10) },
                     onZoomOut = { viewModel.adjustFontScale(-10) },
                     onResetZoom = viewModel::resetFontScale,
-                    onSubmitTest = viewModel::submitActiveTest,
-                    onExitWithoutSaving = viewModel::abortActiveTest
+                    onSubmitTest = { viewModel.submitActiveTest(SubmissionReason.MANUAL) },
+                    onExitAndSubmit = { viewModel.submitActiveTest(SubmissionReason.APP_SWITCH_OR_EXIT) }
                 )
             } else {
                 LaunchedEffect(Unit) {
